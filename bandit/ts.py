@@ -1,10 +1,11 @@
 import numpy as np
-def sample_thetas(arms):
+def sample_thetas(arms,rng=None):
     """
     The core TS step: draw one plausible rate from each arm’s Beta posterior. This implements probability matching—an arm is favored in proportion to the chance it’s truly the best given your data.
     """
 
     # one posterior sample per arm:  θ̃_k ~ Beta(α_k, β_k)
+    rng = rng or np.random.default_rng(42)
     return {k: np.random.beta(v.alpha, v.beta) for k,v in arms.items()}
 
 def allocate(samples, budget, prev_share = None, cap = 0.30,floor = 0.05):

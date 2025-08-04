@@ -4,5 +4,5 @@ def update(arms, df_day):  # df_day: columns segment_key, clicks, conv
 
         # binomial batch update: α += successes, β += failures
         a.alpha += float(r["conv"])
-        a.beta += float(max(r["clicks"] - r["conv"],0.0)
+        a.beta += float(max(r["clicks"] - r["conv"],0.0))
         
