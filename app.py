@@ -63,73 +63,149 @@ def dashboard():
             .step-running { background: #007bff; color: white; }
             .step-complete { background: #28a745; color: white; }
             .step-error { background: #dc3545; color: white; }
+            .explanation-box { background: #e8f4f8; border: 1px solid #bee5eb; border-radius: 8px; padding: 15px; margin: 15px 0; }
+            .explanation-title { font-weight: bold; color: #0c5460; margin-bottom: 10px; }
+            .tooltip { position: relative; cursor: help; border-bottom: 1px dotted #007bff; }
+            .tooltip .tooltiptext { visibility: hidden; width: 300px; background-color: #555; color: white; text-align: left; border-radius: 6px; padding: 10px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -150px; opacity: 0; transition: opacity 0.3s; font-size: 12px; line-height: 1.4; }
+            .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+            .concept-box { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 12px; margin: 10px 0; font-size: 14px; }
+            .demo-note { background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 15px; margin: 15px 0; color: #721c24; }
         </style>
     </head>
     <body>
         <div class="container">
             <div class="header">
-                <h1>Thompson Sampling Dashboard</h1>
+                <h1>🧠 Smart Budget Optimization Dashboard</h1>
+                
+                <div class="explanation-box">
+                    <div class="explanation-title">What is this system doing?</div>
+                    <p>This dashboard demonstrates an AI-powered marketing budget optimization system. It uses two main technologies:</p>
+                    <ul>
+                        <li><strong><span class="tooltip">Thompson Sampling<span class="tooltiptext">A smart algorithm that learns which customer segments perform best by trying different budget allocations and remembering what works</span></span>:</strong> An intelligent algorithm that learns which customer groups are most valuable by testing different budget amounts</li>
+                        <li><strong><span class="tooltip">AI Agents<span class="tooltiptext">AI assistants that analyze data, find patterns, and make recommendations about where to spend marketing budget</span></span>:</strong> AI assistants that analyze the results and suggest improvements</li>
+                    </ul>
+                </div>
+
+                <div class="demo-note">
+                    <strong>🎯 Demo Purpose:</strong> This simulates 7 days of marketing campaigns across different customer segments. The system learns which segments convert better and automatically adjusts budget allocation to maximize results.
+                </div>
+                
                 <div class="controls">
-                    <button class="btn btn-primary" onclick="startTSLoop()" id="ts-btn">Start TS Loop</button>
-                    <button class="btn btn-success" onclick="startAgents()" id="agent-btn">Run Agents</button>
-                    <button class="btn" onclick="reset()">Reset</button>
+                    <button class="btn btn-primary" onclick="startTSLoop()" id="ts-btn">
+                        🚀 Start Smart Optimization
+                    </button>
+                    <button class="btn btn-success" onclick="startAgents()" id="agent-btn">
+                        🤖 Get AI Insights
+                    </button>
+                    <button class="btn" onclick="reset()">🔄 Reset Demo</button>
                 </div>
             </div>
             
             <!-- Thompson Sampling Progress -->
             <div class="card full-width">
-                <h3>Thompson Sampling Progress</h3>
+                <h3>🎯 Smart Budget Learning Process</h3>
+                
+                <div class="concept-box">
+                    <strong>How it works:</strong> The system starts with basic assumptions about each customer segment, then learns from real performance data to get smarter about where to spend money.
+                </div>
+                
                 <div class="step-indicator">
                     <div class="step-circle step-pending" id="ts-step1">1</div>
-                    <span>Initialize Arms</span>
+                    <span><span class="tooltip">Initialize Learning Models<span class="tooltiptext">Set up the mathematical models for each customer segment based on historical data. Think of this as giving the AI a starting point to learn from.</span></span></span>
                 </div>
                 <div class="step-indicator">
                     <div class="step-circle step-pending" id="ts-step2">2</div>
-                    <span>Run Daily Optimization</span>
+                    <span><span class="tooltip">Run Daily Learning & Optimization<span class="tooltiptext">Each day, the system: 1) Decides how much budget to give each segment, 2) Simulates the results, 3) Learns from what worked, 4) Gets smarter for tomorrow</span></span></span>
                 </div>
+                
                 <div class="progress-container">
                     <div class="progress-bar">
                         <div class="progress-fill" id="ts-progress" style="width: 0%"></div>
                     </div>
-                    <div id="ts-status" class="status idle">Ready to start</div>
+                    <div id="ts-status" class="status idle">Ready to start the learning process</div>
                 </div>
+                
+                <div class="explanation-box">
+                    <div class="explanation-title">What you'll see:</div>
+                    <p>The system will simulate 7 days of marketing campaigns. Each day it:</p>
+                    <ol>
+                        <li>Decides how much budget to allocate to each customer segment</li>
+                        <li>Simulates running ads to those segments</li>
+                        <li>Measures clicks and conversions (sales)</li>
+                        <li>Updates its knowledge about which segments work best</li>
+                        <li>Uses this learning to make better decisions tomorrow</li>
+                    </ol>
+                </div>
+                
                 <div class="log-container" id="ts-logs"></div>
             </div>
 
             <!-- Agent Progress -->
             <div class="card full-width">
-                <h3>AI Agents Progress</h3>
+                <h3>🤖 AI Business Analyst</h3>
+                
+                <div class="concept-box">
+                    <strong>What this does:</strong> After the optimization runs, AI agents analyze the results like a human marketing analyst would - looking for trends, problems, and opportunities.
+                </div>
+                
                 <div class="step-indicator">
                     <div class="step-circle step-pending" id="agent-step1">1</div>
-                    <span>Trends Analysis</span>
+                    <span><span class="tooltip">Performance Trend Analysis<span class="tooltiptext">The AI examines which customer segments improved or declined, identifies unusual patterns, and flags potential issues that need attention</span></span></span>
                 </div>
                 <div class="step-indicator">
                     <div class="step-circle step-pending" id="agent-step2">2</div>
-                    <span>Budget Planning</span>
+                    <span><span class="tooltip">Strategic Budget Recommendations<span class="tooltiptext">Based on the trends analysis, the AI suggests specific budget changes to improve performance, explaining why each change makes business sense</span></span></span>
                 </div>
-                <div id="agent-status" class="status idle">Waiting for TS completion</div>
+                
+                <div class="explanation-box">
+                    <div class="explanation-title">What the AI Analyst will tell you:</div>
+                    <ul>
+                        <li><strong>Performance Insights:</strong> Which customer segments are trending up or down</li>
+                        <li><strong>Problem Detection:</strong> Any unusual patterns that might indicate issues</li>
+                        <li><strong>Budget Recommendations:</strong> Specific suggestions on where to increase or decrease spending</li>
+                        <li><strong>Business Rationale:</strong> Plain-English explanations for why each change makes sense</li>
+                    </ul>
+                </div>
+                
+                <div id="agent-status" class="status idle">Waiting for optimization to complete first</div>
                 <div class="log-container" id="agent-logs"></div>
             </div>
             
             <div class="grid">
                 <div class="card">
-                    <h3>Budget Allocation</h3>
+                    <h3>💰 Current Budget Split</h3>
+                    <div class="concept-box">
+                        Shows how your marketing budget is currently divided between different customer segments. Each slice represents a different group of customers.
+                    </div>
                     <div id="allocation-chart"></div>
                 </div>
                 <div class="card">
-                    <h3>Performance Trends</h3>
+                    <h3>📈 Performance Over Time</h3>
+                    <div class="concept-box">
+                        Track how many <span class="tooltip">conversions<span class="tooltiptext">A conversion is when someone takes a desired action, like making a purchase, signing up, or downloading something</span></span> each customer segment generated each day. Rising lines = improving performance.
+                    </div>
                     <div id="performance-chart"></div>
                 </div>
                 <div class="card full-width">
-                    <h3>Conversion Rates by Segment</h3>
+                    <h3>🎯 Conversion Success Rates</h3>
+                    <div class="concept-box">
+                        Shows what percentage of people who clicked on ads actually converted (made a purchase, signed up, etc.). Higher bars = more effective customer segments.
+                        <br><strong>Example:</strong> If 5% conversion rate means 5 out of every 100 people who clicked actually bought something.
+                    </div>
                     <div id="cvr-chart"></div>
                 </div>
                 <div class="card">
-                    <h3>Agent Insights</h3>
+                    <h3>🔍 AI-Generated Insights</h3>
+                    <div class="concept-box">
+                        The AI analyst's observations about what's happening with your campaigns. These are like having a data scientist point out important trends you should know about.
+                    </div>
                     <div id="insights" class="insights-list"></div>
                 </div>
                 <div class="card">
-                    <h3>Budget Suggestions</h3>
+                    <h3>💡 Recommended Changes</h3>
+                    <div class="concept-box">
+                        Specific suggestions from the AI about how to adjust your budget to get better results. Each suggestion explains what to change and why.
+                    </div>
                     <div id="suggestions"></div>
                 </div>
             </div>
