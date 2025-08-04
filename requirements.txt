@@ -19,3 +19,11 @@ pandas
 plotly
 pyarrow
 uvicorn
+fastapi
+langgraph
+numpy
+openai
+pandas
+plotly
+pyarrow
+uvicorn
