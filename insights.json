@@ -8,18 +8,18 @@
     "action_hint": "Monitor; if sustained, consider budget nudge."
   },
   {
-    "headline": "103928|30-34|M|28 CVR change -100%",
-    "evidence": {
-      "clicks_recent": 1,
-      "conv_recent": 0
-    },
-    "action_hint": "Monitor; if sustained, consider budget nudge."
-  },
-  {
     "headline": "144570|30-34|M|7 CVR change 100%",
     "evidence": {
       "clicks_recent": 36,
       "conv_recent": 4
+    },
+    "action_hint": "Monitor; if sustained, consider budget nudge."
+  },
+  {
+    "headline": "103928|30-34|M|28 CVR change -100%",
+    "evidence": {
+      "clicks_recent": 1,
+      "conv_recent": 0
     },
     "action_hint": "Monitor; if sustained, consider budget nudge."
   },

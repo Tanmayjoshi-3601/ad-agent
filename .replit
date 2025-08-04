@@ -3,7 +3,7 @@ run = "uvicorn app:app --host 0.0.0.0 --port 5000"
 
 [nix]
 channel = "stable-25_05"
-packages = ["glibcLocales", "libxcrypt", "pkg-config", "xsimd"]
+packages = ["arrow-cpp", "glibcLocales", "libxcrypt", "pkg-config", "xsimd"]
 
 [deployment]
 run = ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port 5000"]
@@ -28,3 +28,7 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python app.py"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
