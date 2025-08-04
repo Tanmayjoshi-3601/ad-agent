@@ -27,8 +27,6 @@ def simulate_day(facts_day, dollars_by_key, rng=None, arms=None, cpc_map=None, g
         cpc = cpc_obs if (not np.isnan(cpc_obs) and cpc_obs > 0) else (cpc_hat if not np.isnan(cpc_hat) else global_cpc_med)
         cpc = max(cpc, cpc_floor)
 
-        import numpy as np
-
         # CVR: posterior mean from arms, blended with smoothed historical prior
         cvr_post = arms[key].alpha / (arms[key].alpha + arms[key].beta)
         cvr_hist = cvr_prior_map.get(key, cvr_post)
