@@ -1,0 +1,10 @@
+fastapi 
+pandas
+numpy
+pydantic
+pydantic-settings
+scipy
+langgraph
+pytest
+mypy
+kaggle
