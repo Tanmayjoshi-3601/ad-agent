@@ -24,5 +24,5 @@ def init_arms_from_facts(facts: pd.DataFrame, seed = "day0"):
         clicks = float(g["clicks"].sum())
         arms[k] = Arm(k,1.0 + conv,1.0 + max(clicks-conv,0.0))
 
-    return arms
+    return armsms
         

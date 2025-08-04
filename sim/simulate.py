@@ -1,8 +1,8 @@
 # sim/simulate.py
 import numpy as np
 
-def simulate_day(facts_day, dollars_by_key, rng, arms, cpc_map, global_cpc_med,
-                 cvr_prior_map, cpc_floor=None, cvr_cap=0.5):
+def simulate_day(facts_day, dollars_by_key, rng=None, arms=None, cpc_map=None, global_cpc_med=0.5,
+                 cvr_prior_map=None, cpc_floor=None, cvr_cap=0.5):
     rng = rng or np.random.default_rng(0)
     if cpc_floor is None:
         cpc_floor = max(0.10, 0.25 * global_cpc_med)  # data-backed floor

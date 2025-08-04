@@ -19,3 +19,31 @@ def prepare_rates(facts: pd.DataFrame, a=0.5, b=0.5):
     # Dicts for fast lookup
     cpc_map = seg_cpc_median.to_dict()
     return cpc_map, global_cpc_med, seg_cvr_post
+import pandas as pd
+import numpy as np
+
+def prepare_rates(facts, a=0.5, b=0.5):
+    """
+    Prepare CPC and CVR maps from historical facts data
+    """
+    # Calculate segment-level medians for CPC
+    facts_with_metrics = facts.copy()
+    facts_with_metrics['cpc'] = np.where(
+        facts_with_metrics['clicks'] > 0,
+        facts_with_metrics['spent'] / facts_with_metrics['clicks'],
+        np.nan
+    )
+    facts_with_metrics['cvr'] = np.where(
+        facts_with_metrics['clicks'] > 0,
+        facts_with_metrics['conv'] / facts_with_metrics['clicks'],
+        np.nan
+    )
+    
+    # CPC map by segment
+    cpc_map = facts_with_metrics.groupby('segment_key')['cpc'].median().to_dict()
+    global_cpc_med = facts_with_metrics['cpc'].median()
+    
+    # CVR prior map by segment  
+    cvr_prior_map = facts_with_metrics.groupby('segment_key')['cvr'].median().to_dict()
+    
+    return cpc_map, global_cpc_med, cvr_prior_map

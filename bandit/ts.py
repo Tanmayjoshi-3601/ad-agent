@@ -6,7 +6,7 @@ def sample_thetas(arms,rng=None):
 
     # one posterior sample per arm:  θ̃_k ~ Beta(α_k, β_k)
     rng = rng or np.random.default_rng(42)
-    return {k: np.random.beta(v.alpha, v.beta) for k,v in arms.items()}
+    return {k: rng.beta(v.alpha, v.beta) for k,v in arms.items()}
 
 def allocate(samples, budget, prev_share = None, cap = 0.30,floor = 0.05):
     keys, vals = list(samples.keys()), np.array(list(samples.values()))
