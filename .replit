@@ -3,12 +3,13 @@ run = "uvicorn undefined:app --host 0.0.0.0 --port 3000"
 
 [nix]
 channel = "stable-25_05"
+packages = ["glibcLocales", "libxcrypt", "pkg-config", "xsimd"]
 
 [deployment]
 run = ["sh", "-c", "uvicorn undefined:app --host 0.0.0.0 --port 3000"]
 
 [workflows]
-runButton = "Run Demo"
+runButton = "Web Dashboard"
 
 [[workflows.workflow]]
 name = "Run Demo"
@@ -18,3 +19,12 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python run_loop.py"
+
+[[workflows.workflow]]
+name = "Web Dashboard"
+author = 45986336
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python app.py"

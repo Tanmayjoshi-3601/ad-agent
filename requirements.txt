@@ -8,3 +8,6 @@ langgraph
 pytest
 mypy
 kaggle
+fastapi
+plotly
+uvicorn
