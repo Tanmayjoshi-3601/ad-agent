@@ -11,3 +11,11 @@ kaggle
 fastapi
 plotly
 uvicorn
+fastapi
+langgraph
+numpy
+openai
+pandas
+plotly
+pyarrow
+uvicorn

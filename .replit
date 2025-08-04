@@ -1,12 +1,12 @@
 modules = ["python-3.12"]
-run = "uvicorn undefined:app --host 0.0.0.0 --port 3000"
+run = "uvicorn app:app --host 0.0.0.0 --port 5000"
 
 [nix]
 channel = "stable-25_05"
 packages = ["glibcLocales", "libxcrypt", "pkg-config", "xsimd"]
 
 [deployment]
-run = ["sh", "-c", "uvicorn undefined:app --host 0.0.0.0 --port 3000"]
+run = ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port 5000"]
 
 [workflows]
 runButton = "Web Dashboard"
