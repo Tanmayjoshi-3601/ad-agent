@@ -1,0 +1,8 @@
+data_path: data/facts_daily.parquet
+horizon_days: 7
+daily_budget: 200.0
+aov: 80.0
+objective: conversions
+pacing_cap: 0.30
+exploration_floor: 0.05
+seed_priors: day0
