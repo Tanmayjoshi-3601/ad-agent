@@ -1,0 +1,72 @@
+[
+  {
+    "headline": "144562|30-34|M|36 CVR change 242%",
+    "evidence": {
+      "clicks_recent": 8,
+      "conv_recent": 2
+    },
+    "action_hint": "Monitor; if sustained, consider budget nudge."
+  },
+  {
+    "headline": "103928|30-34|M|28 CVR change -100%",
+    "evidence": {
+      "clicks_recent": 1,
+      "conv_recent": 0
+    },
+    "action_hint": "Monitor; if sustained, consider budget nudge."
+  },
+  {
+    "headline": "144570|30-34|M|7 CVR change 100%",
+    "evidence": {
+      "clicks_recent": 36,
+      "conv_recent": 4
+    },
+    "action_hint": "Monitor; if sustained, consider budget nudge."
+  },
+  {
+    "headline": "144602|40-44|M|20 CVR change -86%",
+    "evidence": {
+      "clicks_recent": 237,
+      "conv_recent": 6
+    },
+    "action_hint": "Monitor; if sustained, consider budget nudge."
+  },
+  {
+    "headline": "144572|35-39|M|10 CVR change -41%",
+    "evidence": {
+      "clicks_recent": 114,
+      "conv_recent": 3
+    },
+    "action_hint": "Monitor; if sustained, consider budget nudge."
+  },
+  {
+    "headline": "Anomaly: conversions_exceed_clicks on 103929|30-34|M|29",
+    "evidence": {
+      "segment_key": "103929|30-34|M|29",
+      "day": "2017-08-17",
+      "issue": "conversions_exceed_clicks",
+      "note": "Likely view-through attribution; clamp for per-click modeling."
+    },
+    "action_hint": "Explain to stakeholders; apply per-click clamp in modeling."
+  },
+  {
+    "headline": "Anomaly: conversions_exceed_clicks on 104108|40-44|M|15",
+    "evidence": {
+      "segment_key": "104108|40-44|M|15",
+      "day": "2017-08-18",
+      "issue": "conversions_exceed_clicks",
+      "note": "Likely view-through attribution; clamp for per-click modeling."
+    },
+    "action_hint": "Explain to stakeholders; apply per-click clamp in modeling."
+  },
+  {
+    "headline": "Anomaly: conversions_exceed_clicks on 108793|35-39|F|63",
+    "evidence": {
+      "segment_key": "108793|35-39|F|63",
+      "day": "2017-08-18",
+      "issue": "conversions_exceed_clicks",
+      "note": "Likely view-through attribution; clamp for per-click modeling."
+    },
+    "action_hint": "Explain to stakeholders; apply per-click clamp in modeling."
+  }
+]
