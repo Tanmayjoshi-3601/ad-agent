@@ -27,6 +27,8 @@ def simulate_day(facts_day, dollars_by_key, rng=None, arms=None, cpc_map=None, g
         cpc = cpc_obs if (not np.isnan(cpc_obs) and cpc_obs > 0) else (cpc_hat if not np.isnan(cpc_hat) else global_cpc_med)
         cpc = max(cpc, cpc_floor)
 
+        import numpy as np
+
         # CVR: posterior mean from arms, blended with smoothed historical prior
         cvr_post = arms[key].alpha / (arms[key].alpha + arms[key].beta)
         cvr_hist = cvr_prior_map.get(key, cvr_post)
@@ -35,8 +37,12 @@ def simulate_day(facts_day, dollars_by_key, rng=None, arms=None, cpc_map=None, g
         else:
             cvr = 0.7 * cvr_post + 0.3 * cvr_hist
         cvr = float(np.clip(cvr, 1e-5, cvr_cap))
+        
+        # Ensure CVR is valid for binomial
+        if np.isnan(cvr) or cvr <= 0 or cvr >= 1:
+            cvr = 0.01  # Default to 1% conversion rate
 
         clicks = int(dollars / cpc)
-        conv   = int(rng.binomial(n=max(clicks, 0), p=cvr))
+        conv   = int(rng.binomial(n=max(clicks, 0), p=min(cvr, 0.99)))
         out.append((key, clicks, conv, dollars))
     return out
