@@ -5,10 +5,11 @@ import numpy as np
 from datetime import datetime, timedelta
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.utils import PlotlyJSONEncoder
+import asyncio
+from typing import Dict, List
 
 from bandit.state import init_arms_from_facts
 from bandit.ts import sample_thetas, allocate
@@ -19,12 +20,10 @@ from agents.agents import build_graph
 
 app = FastAPI(title="Thompson Sampling Dashboard")
 
-# Global state
+# Global state for progress tracking
+ts_progress = {"status": "idle", "current_day": 0, "total_days": 0, "logs": [], "error": None}
+agent_progress = {"status": "idle", "step": "", "insights": [], "suggestions": {}, "error": None}
 current_arms = None
-current_plan = []
-current_insights = []
-current_suggestions = []
-simulation_running = False
 
 @app.get("/", response_class=HTMLResponse)
 def dashboard():
@@ -33,7 +32,7 @@ def dashboard():
     <html>
     <head>
         <title>Thompson Sampling Dashboard</title>
-        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
         <style>
             body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
             .container { max-width: 1200px; margin: 0 auto; }
@@ -43,16 +42,27 @@ def dashboard():
             .btn-primary { background: #007bff; color: white; }
             .btn-success { background: #28a745; color: white; }
             .btn:disabled { background: #6c757d; cursor: not-allowed; }
+            .progress-container { margin: 20px 0; }
+            .progress-bar { width: 100%; background: #e9ecef; border-radius: 4px; height: 20px; overflow: hidden; }
+            .progress-fill { height: 100%; background: #007bff; transition: width 0.3s ease; }
             .status { margin: 10px 0; padding: 10px; border-radius: 4px; }
             .status.running { background: #d1ecf1; color: #0c5460; }
             .status.idle { background: #d4edda; color: #155724; }
+            .status.error { background: #f8d7da; color: #721c24; }
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
             .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
             .full-width { grid-column: 1 / -1; }
+            .log-container { max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; background: #f8f9fa; padding: 10px; border-radius: 4px; }
             .insights-list { max-height: 300px; overflow-y: auto; }
             .insight-item { border-left: 4px solid #007bff; padding: 10px; margin: 10px 0; background: #f8f9fa; }
             .insight-headline { font-weight: bold; color: #007bff; }
             .insight-action { font-style: italic; color: #6c757d; margin-top: 5px; }
+            .step-indicator { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+            .step-circle { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+            .step-pending { background: #e9ecef; color: #6c757d; }
+            .step-running { background: #007bff; color: white; }
+            .step-complete { background: #28a745; color: white; }
+            .step-error { background: #dc3545; color: white; }
         </style>
     </head>
     <body>
@@ -60,11 +70,45 @@ def dashboard():
             <div class="header">
                 <h1>Thompson Sampling Dashboard</h1>
                 <div class="controls">
-                    <button class="btn btn-primary" onclick="runSimulation()">Run TS Loop</button>
-                    <button class="btn btn-success" onclick="runAgents()">Run Agents</button>
-                    <button class="btn" onclick="refreshData()">Refresh</button>
+                    <button class="btn btn-primary" onclick="startTSLoop()" id="ts-btn">Start TS Loop</button>
+                    <button class="btn btn-success" onclick="startAgents()" id="agent-btn">Run Agents</button>
+                    <button class="btn" onclick="reset()">Reset</button>
                 </div>
-                <div id="status" class="status idle">Ready</div>
+            </div>
+            
+            <!-- Thompson Sampling Progress -->
+            <div class="card full-width">
+                <h3>Thompson Sampling Progress</h3>
+                <div class="step-indicator">
+                    <div class="step-circle step-pending" id="ts-step1">1</div>
+                    <span>Initialize Arms</span>
+                </div>
+                <div class="step-indicator">
+                    <div class="step-circle step-pending" id="ts-step2">2</div>
+                    <span>Run Daily Optimization</span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="ts-progress" style="width: 0%"></div>
+                    </div>
+                    <div id="ts-status" class="status idle">Ready to start</div>
+                </div>
+                <div class="log-container" id="ts-logs"></div>
+            </div>
+
+            <!-- Agent Progress -->
+            <div class="card full-width">
+                <h3>AI Agents Progress</h3>
+                <div class="step-indicator">
+                    <div class="step-circle step-pending" id="agent-step1">1</div>
+                    <span>Trends Analysis</span>
+                </div>
+                <div class="step-indicator">
+                    <div class="step-circle step-pending" id="agent-step2">2</div>
+                    <span>Budget Planning</span>
+                </div>
+                <div id="agent-status" class="status idle">Waiting for TS completion</div>
+                <div class="log-container" id="agent-logs"></div>
             </div>
             
             <div class="grid">
@@ -92,115 +136,221 @@ def dashboard():
         </div>
 
         <script>
-            let refreshInterval;
+            let progressInterval;
 
-            async function runSimulation() {
-                updateStatus('Running Thompson Sampling...', 'running');
+            async function startTSLoop() {
+                const btn = document.getElementById('ts-btn');
+                btn.disabled = true;
+                btn.textContent = 'Running...';
+                
+                // Reset progress
+                updateTSStep(1, 'running');
+                updateTSProgress(0, 'Initializing arms...');
+                
                 try {
-                    const response = await fetch('/run-ts', { method: 'POST' });
+                    const response = await fetch('/start-ts', { method: 'POST' });
                     const result = await response.json();
-                    updateStatus('TS Loop completed', 'idle');
-                    refreshData();
-                } catch (error) {
-                    updateStatus('Error: ' + error.message, 'idle');
-                }
-            }
-
-            async function runAgents() {
-                updateStatus('Running agents...', 'running');
-                try {
-                    const response = await fetch('/run-agents', { method: 'POST' });
-                    const result = await response.json();
-                    updateStatus('Agents completed', 'idle');
-                    refreshData();
-                } catch (error) {
-                    updateStatus('Error: ' + error.message, 'idle');
-                }
-            }
-
-            async function refreshData() {
-                try {
-                    const [plan, insights, suggestions] = await Promise.all([
-                        fetch('/api/plan').then(r => r.json()),
-                        fetch('/api/insights').then(r => r.json()),
-                        fetch('/api/suggestions').then(r => r.json())
-                    ]);
                     
-                    updateCharts(plan, insights, suggestions);
-                    updateInsights(insights);
-                    updateSuggestions(suggestions);
+                    if (result.status === 'started') {
+                        // Start polling for progress
+                        progressInterval = setInterval(pollTSProgress, 1000);
+                    }
                 } catch (error) {
-                    console.error('Refresh error:', error);
+                    updateTSStatus('Error: ' + error.message, 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Start TS Loop';
                 }
             }
 
-            function updateStatus(message, type) {
-                const status = document.getElementById('status');
+            async function pollTSProgress() {
+                try {
+                    const response = await fetch('/ts-progress');
+                    const progress = await response.json();
+                    
+                    if (progress.status === 'running') {
+                        const percentage = progress.total_days > 0 ? 
+                            (progress.current_day / progress.total_days) * 100 : 0;
+                        updateTSProgress(percentage, `Day ${progress.current_day}/${progress.total_days}`);
+                        updateTSLogs(progress.logs);
+                        
+                        if (progress.current_day > 0) {
+                            updateTSStep(2, 'running');
+                        }
+                    } else if (progress.status === 'complete') {
+                        clearInterval(progressInterval);
+                        updateTSStep(2, 'complete');
+                        updateTSProgress(100, 'Complete!');
+                        updateTSLogs(progress.logs);
+                        updateCharts();
+                        
+                        document.getElementById('ts-btn').disabled = false;
+                        document.getElementById('ts-btn').textContent = 'Start TS Loop';
+                        document.getElementById('agent-btn').disabled = false;
+                        updateAgentStatus('Ready to run', 'idle');
+                    } else if (progress.status === 'error') {
+                        clearInterval(progressInterval);
+                        updateTSStep(1, 'error');
+                        updateTSStatus('Error: ' + progress.error, 'error');
+                        document.getElementById('ts-btn').disabled = false;
+                        document.getElementById('ts-btn').textContent = 'Start TS Loop';
+                    }
+                } catch (error) {
+                    console.error('Progress polling error:', error);
+                }
+            }
+
+            async function startAgents() {
+                const btn = document.getElementById('agent-btn');
+                btn.disabled = true;
+                btn.textContent = 'Running...';
+                
+                updateAgentStep(1, 'running');
+                updateAgentStatus('Running trends analysis...', 'running');
+                
+                try {
+                    const response = await fetch('/start-agents', { method: 'POST' });
+                    const result = await response.json();
+                    
+                    if (result.status === 'started') {
+                        // Start polling for agent progress
+                        const agentInterval = setInterval(async () => {
+                            try {
+                                const agentResponse = await fetch('/agent-progress');
+                                const agentProgress = await agentResponse.json();
+                                
+                                if (agentProgress.status === 'trends_complete') {
+                                    updateAgentStep(1, 'complete');
+                                    updateAgentStep(2, 'running');
+                                    updateAgentStatus('Running budget planning...', 'running');
+                                    updateInsights(agentProgress.insights);
+                                } else if (agentProgress.status === 'complete') {
+                                    clearInterval(agentInterval);
+                                    updateAgentStep(2, 'complete');
+                                    updateAgentStatus('Complete!', 'idle');
+                                    updateInsights(agentProgress.insights);
+                                    updateSuggestions(agentProgress.suggestions);
+                                    
+                                    btn.disabled = false;
+                                    btn.textContent = 'Run Agents';
+                                } else if (agentProgress.status === 'error') {
+                                    clearInterval(agentInterval);
+                                    updateAgentStep(1, 'error');
+                                    updateAgentStatus('Error: ' + agentProgress.error, 'error');
+                                    btn.disabled = false;
+                                    btn.textContent = 'Run Agents';
+                                }
+                            } catch (error) {
+                                console.error('Agent progress error:', error);
+                            }
+                        }, 1000);
+                    }
+                } catch (error) {
+                    updateAgentStatus('Error: ' + error.message, 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Run Agents';
+                }
+            }
+
+            function updateTSStep(step, status) {
+                const element = document.getElementById(`ts-step${step}`);
+                element.className = `step-circle step-${status}`;
+            }
+
+            function updateAgentStep(step, status) {
+                const element = document.getElementById(`agent-step${step}`);
+                element.className = `step-circle step-${status}`;
+            }
+
+            function updateTSProgress(percentage, message) {
+                document.getElementById('ts-progress').style.width = percentage + '%';
+                updateTSStatus(message, percentage === 100 ? 'idle' : 'running');
+            }
+
+            function updateTSStatus(message, type) {
+                const status = document.getElementById('ts-status');
                 status.textContent = message;
                 status.className = `status ${type}`;
             }
 
-            function updateCharts(plan, insights, suggestions) {
-                if (plan.length > 0) {
-                    // Budget allocation pie chart
-                    const latestDay = plan.reduce((latest, row) => 
-                        row.day > latest ? row.day : latest, plan[0].day);
-                    const latestPlan = plan.filter(row => row.day === latestDay);
-                    
-                    const pieData = [{
-                        type: 'pie',
-                        labels: latestPlan.map(row => row.segment_key),
-                        values: latestPlan.map(row => row.dollars),
-                        textinfo: 'label+percent',
-                        textposition: 'outside'
-                    }];
-                    Plotly.newPlot('allocation-chart', pieData, {height: 300});
+            function updateAgentStatus(message, type) {
+                const status = document.getElementById('agent-status');
+                status.textContent = message;
+                status.className = `status ${type}`;
+            }
 
-                    // Performance trends
-                    const segments = [...new Set(plan.map(row => row.segment_key))];
-                    const performanceData = segments.map(segment => {
-                        const segmentData = plan.filter(row => row.segment_key === segment);
-                        return {
-                            x: segmentData.map(row => row.day),
-                            y: segmentData.map(row => row.conv || 0),
-                            type: 'scatter',
-                            mode: 'lines+markers',
-                            name: segment,
-                            line: {width: 2}
-                        };
-                    });
-                    Plotly.newPlot('performance-chart', performanceData, {
-                        height: 300,
-                        xaxis: {title: 'Day'},
-                        yaxis: {title: 'Conversions'}
-                    });
+            function updateTSLogs(logs) {
+                const container = document.getElementById('ts-logs');
+                container.innerHTML = logs.slice(-10).map(log => `<div>${log}</div>`).join('');
+                container.scrollTop = container.scrollHeight;
+            }
 
-                    // CVR by segment
-                    const cvrData = latestPlan.map(row => ({
-                        segment: row.segment_key,
-                        cvr: row.clicks > 0 ? (row.conv / row.clicks) : 0,
-                        clicks: row.clicks || 0
-                    }));
+            async function updateCharts() {
+                try {
+                    const plan = await fetch('/api/plan').then(r => r.json());
                     
-                    const barData = [{
-                        x: cvrData.map(d => d.segment),
-                        y: cvrData.map(d => d.cvr * 100),
-                        type: 'bar',
-                        marker: {color: 'rgba(0, 123, 255, 0.7)'},
-                        text: cvrData.map(d => `${d.clicks} clicks`),
-                        textposition: 'outside'
-                    }];
-                    Plotly.newPlot('cvr-chart', barData, {
-                        height: 300,
-                        xaxis: {title: 'Segment', tickangle: -45},
-                        yaxis: {title: 'CVR (%)'}
-                    });
+                    if (plan.length > 0) {
+                        // Budget allocation pie chart
+                        const latestDay = plan.reduce((latest, row) => 
+                            row.day > latest ? row.day : latest, plan[0].day);
+                        const latestPlan = plan.filter(row => row.day === latestDay);
+                        
+                        const pieData = [{
+                            type: 'pie',
+                            labels: latestPlan.map(row => row.segment_key),
+                            values: latestPlan.map(row => row.dollars),
+                            textinfo: 'label+percent',
+                            textposition: 'outside'
+                        }];
+                        Plotly.newPlot('allocation-chart', pieData, {height: 300});
+
+                        // Performance trends
+                        const segments = [...new Set(plan.map(row => row.segment_key))];
+                        const performanceData = segments.map(segment => {
+                            const segmentData = plan.filter(row => row.segment_key === segment);
+                            return {
+                                x: segmentData.map(row => row.day),
+                                y: segmentData.map(row => row.conv || 0),
+                                type: 'scatter',
+                                mode: 'lines+markers',
+                                name: segment,
+                                line: {width: 2}
+                            };
+                        });
+                        Plotly.newPlot('performance-chart', performanceData, {
+                            height: 300,
+                            xaxis: {title: 'Day'},
+                            yaxis: {title: 'Conversions'}
+                        });
+
+                        // CVR by segment
+                        const cvrData = latestPlan.map(row => ({
+                            segment: row.segment_key,
+                            cvr: row.clicks > 0 ? (row.conv / row.clicks) : 0,
+                            clicks: row.clicks || 0
+                        }));
+                        
+                        const barData = [{
+                            x: cvrData.map(d => d.segment),
+                            y: cvrData.map(d => d.cvr * 100),
+                            type: 'bar',
+                            marker: {color: 'rgba(0, 123, 255, 0.7)'},
+                            text: cvrData.map(d => `${d.clicks} clicks`),
+                            textposition: 'outside'
+                        }];
+                        Plotly.newPlot('cvr-chart', barData, {
+                            height: 300,
+                            xaxis: {title: 'Segment', tickangle: -45},
+                            yaxis: {title: 'CVR (%)'}
+                        });
+                    }
+                } catch (error) {
+                    console.error('Chart update error:', error);
                 }
             }
 
             function updateInsights(insights) {
                 const container = document.getElementById('insights');
-                if (insights.length === 0) {
+                if (!insights || insights.length === 0) {
                     container.innerHTML = '<p>No insights available</p>';
                     return;
                 }
@@ -216,6 +366,11 @@ def dashboard():
 
             function updateSuggestions(data) {
                 const container = document.getElementById('suggestions');
+                if (!data || !data.suggestions) {
+                    container.innerHTML = '<p>No suggestions available</p>';
+                    return;
+                }
+                
                 const suggestions = data.suggestions || [];
                 
                 if (suggestions.length === 0) {
@@ -233,29 +388,66 @@ def dashboard():
                 container.innerHTML = html + `<p style="margin-top: 15px; font-style: italic;">${data.rationale}</p>`;
             }
 
-            // Auto-refresh every 30 seconds
-            refreshInterval = setInterval(refreshData, 30000);
-            
-            // Initial load
-            refreshData();
+            function reset() {
+                // Reset all progress indicators
+                for (let i = 1; i <= 2; i++) {
+                    updateTSStep(i, 'pending');
+                    updateAgentStep(i, 'pending');
+                }
+                updateTSProgress(0, 'Ready to start');
+                updateAgentStatus('Waiting for TS completion', 'idle');
+                document.getElementById('ts-logs').innerHTML = '';
+                document.getElementById('agent-logs').innerHTML = '';
+                document.getElementById('insights').innerHTML = '<p>No insights available</p>';
+                document.getElementById('suggestions').innerHTML = '<p>No suggestions available</p>';
+                
+                // Clear charts
+                Plotly.purge('allocation-chart');
+                Plotly.purge('performance-chart');
+                Plotly.purge('cvr-chart');
+                
+                // Re-enable buttons
+                document.getElementById('ts-btn').disabled = false;
+                document.getElementById('ts-btn').textContent = 'Start TS Loop';
+                document.getElementById('agent-btn').disabled = true;
+                
+                clearInterval(progressInterval);
+            }
+
+            // Initialize
+            reset();
         </script>
     </body>
     </html>
     """
 
-@app.post("/run-ts")
-async def run_thompson_sampling(background_tasks: BackgroundTasks):
-    global simulation_running
-    if simulation_running:
+@app.post("/start-ts")
+async def start_thompson_sampling(background_tasks: BackgroundTasks):
+    global ts_progress
+    if ts_progress["status"] == "running":
         return {"status": "already_running"}
     
-    background_tasks.add_task(execute_ts_loop)
+    ts_progress = {"status": "running", "current_day": 0, "total_days": 7, "logs": [], "error": None}
+    background_tasks.add_task(execute_ts_loop_with_progress)
     return {"status": "started"}
 
-@app.post("/run-agents")
-async def run_agents_endpoint(background_tasks: BackgroundTasks):
-    background_tasks.add_task(execute_agents)
+@app.get("/ts-progress")
+async def get_ts_progress():
+    return ts_progress
+
+@app.post("/start-agents")
+async def start_agents_endpoint(background_tasks: BackgroundTasks):
+    global agent_progress
+    if agent_progress["status"] == "running":
+        return {"status": "already_running"}
+    
+    agent_progress = {"status": "running", "step": "trends", "insights": [], "suggestions": {}, "error": None}
+    background_tasks.add_task(execute_agents_with_progress)
     return {"status": "started"}
+
+@app.get("/agent-progress")
+async def get_agent_progress():
+    return agent_progress
 
 @app.get("/api/plan")
 async def get_plan():
@@ -281,18 +473,25 @@ async def get_suggestions():
     except:
         return {"suggestions": [], "rationale": "No suggestions available"}
 
-async def execute_ts_loop():
-    global simulation_running, current_arms, current_plan
-    simulation_running = True
+async def execute_ts_loop_with_progress():
+    global ts_progress, current_arms
     
     try:
+        ts_progress["logs"].append("Loading configuration...")
+        await asyncio.sleep(0.1)  # Allow UI to update
+        
         # Load configuration
         facts = pd.read_parquet("data/facts_daily.parquet")
         cpc_map, global_cpc_med, cvr_prior_map = prepare_rates(facts, a=0.5, b=0.5)
         days = sorted(facts["day"].unique())[:7]  # Run 7 days
         
+        ts_progress["total_days"] = len(days)
+        ts_progress["logs"].append(f"Initialized for {len(days)} days")
+        
         # Initialize arms
+        ts_progress["logs"].append("Initializing arms from historical data...")
         current_arms = init_arms_from_facts(facts, seed="day0")
+        ts_progress["logs"].append(f"Initialized {len(current_arms)} arms")
         
         # Run simulation
         rng = np.random.default_rng(123)
@@ -300,7 +499,10 @@ async def execute_ts_loop():
         budget = 200.0
         cap, floor = 0.30, 0.05
         
-        for d in days:
+        for i, d in enumerate(days):
+            ts_progress["current_day"] = i + 1
+            ts_progress["logs"].append(f"Processing day {d}...")
+            
             day_slice = facts.loc[facts["day"] == d, ["segment_key","clicks","conv","spent"]]
             
             # Thompson sampling
@@ -317,28 +519,39 @@ async def execute_ts_loop():
             update(current_arms, df_out)
             
             # Log results
+            total_clicks, total_conv = 0, 0
             for k in sorted(share):
                 clicks = int(df_out[df_out.segment_key == k]["clicks"].sum())
                 conv = int(df_out[df_out.segment_key == k]["conv"].sum())
+                total_clicks += clicks
+                total_conv += conv
                 logs.append({
                     "day": str(d), "segment_key": k, "share": share[k], "dollars": dollars[k],
                     "clicks": clicks, "conv": conv
                 })
+            
+            ts_progress["logs"].append(f"Day {d}: {total_clicks} clicks, {total_conv} conversions")
             prev_share = share
+            
+            # Small delay to show progress
+            await asyncio.sleep(0.5)
         
         # Save results
         pd.DataFrame(logs).to_csv("plan.csv", index=False)
-        current_plan = logs
+        ts_progress["logs"].append("Saved results to plan.csv")
+        ts_progress["status"] = "complete"
         
     except Exception as e:
-        print(f"TS Loop error: {e}")
-    finally:
-        simulation_running = False
+        ts_progress["status"] = "error"
+        ts_progress["error"] = str(e)
+        ts_progress["logs"].append(f"Error: {e}")
 
-async def execute_agents():
-    global current_insights, current_suggestions
+async def execute_agents_with_progress():
+    global agent_progress
     
     try:
+        agent_progress["logs"] = ["Starting trends analysis..."]
+        
         # Configure and run agents
         cfg = {
             "facts_path": "data/facts_daily.parquet",
@@ -349,23 +562,45 @@ async def execute_agents():
         }
         
         graph = build_graph()
+        
+        # Run trends analysis
+        agent_progress["step"] = "trends"
+        agent_progress["logs"].append("Analyzing performance trends...")
+        await asyncio.sleep(1)  # Simulate processing time
+        
         result = graph.invoke(cfg)
         
+        # Update progress after trends
+        agent_progress["insights"] = result.get("insights", [])
+        agent_progress["status"] = "trends_complete"
+        agent_progress["logs"].append(f"Found {len(agent_progress['insights'])} insights")
+        
+        await asyncio.sleep(1)  # Allow UI to update
+        
+        # Budget planning step
+        agent_progress["step"] = "planning"
+        agent_progress["logs"].append("Generating budget recommendations...")
+        await asyncio.sleep(1)  # Simulate processing time
+        
         # Save results
-        current_insights = result.get("insights", [])
-        current_suggestions = {
+        agent_progress["suggestions"] = {
             "suggestions": result.get("plan_suggestions", []),
             "rationale": result.get("rationale", "")
         }
         
         with open("insights.json", "w") as f:
-            json.dump(current_insights, f, indent=2)
+            json.dump(agent_progress["insights"], f, indent=2)
         
         with open("plan_suggestions.json", "w") as f:
-            json.dump(current_suggestions, f, indent=2)
+            json.dump(agent_progress["suggestions"], f, indent=2)
+        
+        agent_progress["status"] = "complete"
+        agent_progress["logs"].append(f"Generated {len(agent_progress['suggestions']['suggestions'])} suggestions")
             
     except Exception as e:
-        print(f"Agents error: {e}")
+        agent_progress["status"] = "error"
+        agent_progress["error"] = str(e)
+        agent_progress["logs"].append(f"Error: {e}")
 
 if __name__ == "__main__":
     import uvicorn
