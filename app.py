@@ -117,7 +117,7 @@ def dashboard():
                 box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             }
             .chart-card { min-width: 500px; }
-            .chart-card #allocation-chart, .chart-card #performance-chart, .chart-card #cvr-chart { min-height: 400px; }
+            .chart-card #allocation-chart, .chart-card #performance-chart, .chart-card #cvr-chart { min-height: 500px; }
             .card h3 { margin: 0 0 16px 0; color: var(--text-primary); font-size: 1.25rem; font-weight: 600; }
             .full-width { grid-column: 1 / -1; }
             .log-container { 
@@ -314,29 +314,32 @@ def dashboard():
                 <div class="log-container" id="agent-logs"></div>
             </div>
             
+            <div class="card full-width chart-card">
+                <h3>💰 Current Budget Split</h3>
+                <div class="concept-box">
+                    Shows how your marketing budget is currently divided between different customer segments. Each slice represents a different group of customers.
+                </div>
+                <div id="allocation-chart"></div>
+            </div>
+            
+            <div class="card full-width chart-card">
+                <h3>📈 Performance Over Time</h3>
+                <div class="concept-box">
+                    Track how many <span class="tooltip">conversions<span class="tooltiptext">A conversion is when someone takes a desired action, like making a purchase, signing up, or downloading something</span></span> each customer segment generated each day. Rising lines = improving performance.
+                </div>
+                <div id="performance-chart"></div>
+            </div>
+            
+            <div class="card full-width chart-card">
+                <h3>🎯 Conversion Success Rates</h3>
+                <div class="concept-box">
+                    Shows what percentage of people who clicked on ads actually converted (made a purchase, signed up, etc.). Higher bars = more effective customer segments.
+                    <br><strong>Example:</strong> If 5% conversion rate means 5 out of every 100 people who clicked actually bought something.
+                </div>
+                <div id="cvr-chart"></div>
+            </div>
+            
             <div class="grid">
-                <div class="card chart-card">
-                    <h3>💰 Current Budget Split</h3>
-                    <div class="concept-box">
-                        Shows how your marketing budget is currently divided between different customer segments. Each slice represents a different group of customers.
-                    </div>
-                    <div id="allocation-chart"></div>
-                </div>
-                <div class="card chart-card">
-                    <h3>📈 Performance Over Time</h3>
-                    <div class="concept-box">
-                        Track how many <span class="tooltip">conversions<span class="tooltiptext">A conversion is when someone takes a desired action, like making a purchase, signing up, or downloading something</span></span> each customer segment generated each day. Rising lines = improving performance.
-                    </div>
-                    <div id="performance-chart"></div>
-                </div>
-                <div class="card full-width chart-card">
-                    <h3>🎯 Conversion Success Rates</h3>
-                    <div class="concept-box">
-                        Shows what percentage of people who clicked on ads actually converted (made a purchase, signed up, etc.). Higher bars = more effective customer segments.
-                        <br><strong>Example:</strong> If 5% conversion rate means 5 out of every 100 people who clicked actually bought something.
-                    </div>
-                    <div id="cvr-chart"></div>
-                </div>
                 <div class="card">
                     <h3>🔍 AI Performance Analyst - Key Insights</h3>
                     <div class="concept-box">
@@ -521,11 +524,11 @@ def dashboard():
                             textposition: 'outside'
                         }];
                         Plotly.newPlot('allocation-chart', pieData, {
-                            height: 400,
+                            height: 500,
                             margin: {t: 50, b: 50, l: 50, r: 50},
                             paper_bgcolor: 'rgba(0,0,0,0)',
                             plot_bgcolor: 'rgba(0,0,0,0)',
-                            font: {color: '#f0f6fc', size: 12}
+                            font: {color: '#f0f6fc', size: 14}
                         });
 
                         // Performance trends
@@ -543,13 +546,14 @@ def dashboard():
                             };
                         });
                         Plotly.newPlot('performance-chart', performanceData, {
-                            height: 400,
-                            margin: {t: 50, b: 50, l: 50, r: 50},
-                            xaxis: {title: 'Day', color: '#f0f6fc'},
-                            yaxis: {title: 'Conversions', color: '#f0f6fc'},
+                            height: 500,
+                            margin: {t: 50, b: 80, l: 80, r: 50},
+                            xaxis: {title: 'Day', color: '#f0f6fc', titlefont: {size: 16}},
+                            yaxis: {title: 'Conversions', color: '#f0f6fc', titlefont: {size: 16}},
                             paper_bgcolor: 'rgba(0,0,0,0)',
                             plot_bgcolor: 'rgba(0,0,0,0)',
-                            font: {color: '#f0f6fc', size: 12}
+                            font: {color: '#f0f6fc', size: 14},
+                            legend: {font: {size: 14}}
                         });
 
                         // CVR by segment
@@ -568,13 +572,13 @@ def dashboard():
                             textposition: 'outside'
                         }];
                         Plotly.newPlot('cvr-chart', barData, {
-                            height: 400,
-                            margin: {t: 50, b: 100, l: 50, r: 50},
-                            xaxis: {title: 'Customer Segment', tickangle: -45, color: '#f0f6fc'},
-                            yaxis: {title: 'Conversion Rate (%)', color: '#f0f6fc'},
+                            height: 500,
+                            margin: {t: 50, b: 120, l: 80, r: 50},
+                            xaxis: {title: 'Customer Segment', tickangle: -45, color: '#f0f6fc', titlefont: {size: 16}},
+                            yaxis: {title: 'Conversion Rate (%)', color: '#f0f6fc', titlefont: {size: 16}},
                             paper_bgcolor: 'rgba(0,0,0,0)',
                             plot_bgcolor: 'rgba(0,0,0,0)',
-                            font: {color: '#f0f6fc', size: 12}
+                            font: {color: '#f0f6fc', size: 14}
                         });
                     }
                 } catch (error) {
