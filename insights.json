@@ -1,72 +1,74 @@
 [
   {
-    "headline": "144562|30-34|M|36 CVR change 242%",
+    "headline": "Significant increase in conversion rate for segment 144562|30-34|M|36",
     "evidence": {
-      "clicks_recent": 8,
-      "conv_recent": 2
+      "key_metrics": {
+        "cvr_recent": 0.25,
+        "cvr_prior": 0.073,
+        "pct_cvr_change": 2.42,
+        "clicks_recent": 8,
+        "conv_recent": 2
+      }
     },
-    "action_hint": "Monitor; if sustained, consider budget nudge."
+    "action_hint": "Allocate more budget to this segment to capitalize on the increased conversion rate.",
+    "urgency": "high",
+    "confidence": "high"
   },
   {
-    "headline": "144570|30-34|M|7 CVR change 100%",
+    "headline": "Complete drop in conversion rate for segment 103928|30-34|M|28",
     "evidence": {
-      "clicks_recent": 36,
-      "conv_recent": 4
+      "key_metrics": {
+        "cvr_recent": 0.0,
+        "cvr_prior": 1.0,
+        "pct_cvr_change": -1.0,
+        "clicks_recent": 1,
+        "conv_recent": 0
+      }
     },
-    "action_hint": "Monitor; if sustained, consider budget nudge."
+    "action_hint": "Investigate the reasons for the drop and consider pausing this segment until resolved.",
+    "urgency": "high",
+    "confidence": "medium"
   },
   {
-    "headline": "103928|30-34|M|28 CVR change -100%",
+    "headline": "Moderate increase in conversion rate for segment 144570|30-34|M|7",
     "evidence": {
-      "clicks_recent": 1,
-      "conv_recent": 0
+      "key_metrics": {
+        "cvr_recent": 0.111,
+        "cvr_prior": 0.056,
+        "pct_cvr_change": 1.0,
+        "clicks_recent": 36,
+        "conv_recent": 4
+      }
     },
-    "action_hint": "Monitor; if sustained, consider budget nudge."
+    "action_hint": "Monitor this segment closely and consider increasing the budget if the trend continues.",
+    "urgency": "medium",
+    "confidence": "medium"
   },
   {
-    "headline": "144602|40-44|M|20 CVR change -86%",
+    "headline": "Significant drop in conversion rate for segment 144602|40-44|M|20",
     "evidence": {
-      "clicks_recent": 237,
-      "conv_recent": 6
+      "key_metrics": {
+        "cvr_recent": 0.025,
+        "cvr_prior": 0.182,
+        "pct_cvr_change": -0.861,
+        "clicks_recent": 237,
+        "conv_recent": 6
+      }
     },
-    "action_hint": "Monitor; if sustained, consider budget nudge."
+    "action_hint": "Review the targeting and messaging for this segment to identify potential issues.",
+    "urgency": "medium",
+    "confidence": "high"
   },
   {
-    "headline": "144572|35-39|M|10 CVR change -41%",
+    "headline": "Multiple anomalies detected with conversions exceeding clicks",
     "evidence": {
-      "clicks_recent": 114,
-      "conv_recent": 3
+      "key_metrics": {
+        "anomalies_count": 10,
+        "note": "Likely view-through attribution; clamp for per-click modeling."
+      }
     },
-    "action_hint": "Monitor; if sustained, consider budget nudge."
-  },
-  {
-    "headline": "Anomaly: conversions_exceed_clicks on 103929|30-34|M|29",
-    "evidence": {
-      "segment_key": "103929|30-34|M|29",
-      "day": "2017-08-17",
-      "issue": "conversions_exceed_clicks",
-      "note": "Likely view-through attribution; clamp for per-click modeling."
-    },
-    "action_hint": "Explain to stakeholders; apply per-click clamp in modeling."
-  },
-  {
-    "headline": "Anomaly: conversions_exceed_clicks on 104108|40-44|M|15",
-    "evidence": {
-      "segment_key": "104108|40-44|M|15",
-      "day": "2017-08-18",
-      "issue": "conversions_exceed_clicks",
-      "note": "Likely view-through attribution; clamp for per-click modeling."
-    },
-    "action_hint": "Explain to stakeholders; apply per-click clamp in modeling."
-  },
-  {
-    "headline": "Anomaly: conversions_exceed_clicks on 108793|35-39|F|63",
-    "evidence": {
-      "segment_key": "108793|35-39|F|63",
-      "day": "2017-08-18",
-      "issue": "conversions_exceed_clicks",
-      "note": "Likely view-through attribution; clamp for per-click modeling."
-    },
-    "action_hint": "Explain to stakeholders; apply per-click clamp in modeling."
+    "action_hint": "Implement a clamp for per-click modeling to ensure accurate reporting and analysis.",
+    "urgency": "high",
+    "confidence": "high"
   }
 ]

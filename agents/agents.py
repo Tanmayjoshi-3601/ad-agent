@@ -56,12 +56,21 @@ def _pct(a, b):
     if pd.isna(a) or pd.isna(b) or b == 0: return np.nan
     return (a - b) / abs(b)
 
-def _json_from_llm(system, user) -> dict:
-    """Call OpenAI chat with JSON output."""
-    resp = client.chat.completions.create(  # Chat Completions w/ JSON mode
+def _json_from_llm(system, user, examples=None) -> dict:
+    """Call OpenAI chat with JSON output and optional few-shot examples."""
+    messages = [{"role":"system","content":system}]
+    
+    # Add few-shot examples if provided
+    if examples:
+        for example in examples:
+            messages.append({"role": "user", "content": example["input"]})
+            messages.append({"role": "assistant", "content": example["output"]})
+    
+    messages.append({"role":"user","content":user})
+    
+    resp = client.chat.completions.create(
         model=MODEL,
-        messages=[{"role":"system","content":system},
-                  {"role":"user","content":user}],
+        messages=messages,
         response_format={"type": "json_object"},
         temperature=0.2,
     )
@@ -133,13 +142,34 @@ def trends_node(state: State) -> dict:
         })
 
     # Ask the model to turn these into a crisp JSON insight list
-    system = "You are a performance marketing analyst. Output concise JSON."
+    system = """You are a performance marketing analyst. Think step-by-step:
+
+1. First, identify the most significant performance changes
+2. Determine if changes are statistically meaningful (sufficient volume)
+3. Classify each insight by urgency (immediate action vs monitoring)
+4. Provide specific, actionable recommendations
+
+Output your analysis as JSON with this structure:
+{
+  "insights": [
+    {
+      "headline": "Brief description",
+      "evidence": {"key_metrics": "supporting_data"},
+      "action_hint": "Specific recommendation",
+      "urgency": "high|medium|low",
+      "confidence": "high|medium|low"
+    }
+  ]
+}"""
+    
     user = json.dumps({
-        "task": "summarize_trends",
-        "window_days": k,
-        "end_day": str(end_day.date()),
-        "top_cvr_movers": movers,
-        "anomalies": anomalies
+        "task": "Analyze the following marketing performance data and provide actionable insights",
+        "analysis_window": f"{k} days ending {str(end_day.date())}",
+        "performance_data": {
+            "top_conversion_rate_changes": movers,
+            "detected_anomalies": anomalies,
+            "note": "Focus on changes with statistical significance and business impact"
+        }
     })
     llm_out = _json_from_llm(system, user)
     
@@ -341,14 +371,31 @@ def planner_node(state: State) -> dict:
         final_suggestions = final_suggestions_updated
 
 
-    # concise stakeholder rationale via LLM (optional)
-    system = "You are a pragmatic media planner. Output concise JSON."
+    # Enhanced business-context prompting for stakeholder communication
+    system = f"""You are a senior media strategist presenting to business stakeholders. 
+    
+Your role: Translate data insights into clear business recommendations.
+Optimization goal: {"ROAS (Return on Ad Spend)" if aov_val is not None else "Conversion Volume"}
+Risk tolerance: Conservative (max {cap*100:.0f}% daily changes)
+
+Provide output in this JSON format:
+{{
+  "rationale": "2-3 sentence executive summary of recommended changes and expected impact",
+  "business_context": "Why these changes make sense from a business perspective",
+  "risk_assessment": "Potential risks and mitigation strategies",
+  "success_metrics": "How to measure if changes are working"
+}}"""
+    
     user = json.dumps({
-        "task": "summarize_plan_nudges",
-        "pacing_cap": cap,
-        "objective": "ROAS" if aov_val is not None else "CONVERSIONS",
-        "suggestions": final_suggestions,
-        "note": "Respect pacing cap; small nudges; keep simple guardrails."
+        "situation": f"Budget optimization results for {len(segments_recent)} customer segments",
+        "performance_window": f"Last {k} days analysis",
+        "optimization_metric": "ROAS" if aov_val is not None else "Conversions",
+        "budget_constraints": {
+            "daily_change_limit": f"{cap*100:.0f}%",
+            "minimum_segment_budget": f"{floor*100:.0f}%"
+        },
+        "recommended_changes": final_suggestions,
+        "context": "These recommendations come from Thompson Sampling optimization and trend analysis"
     })
     llm_out = _json_from_llm(system, user)
     rationale = llm_out.get("rationale") or "Rebalanced toward stronger segments within pacing cap; monitor tomorrow."
