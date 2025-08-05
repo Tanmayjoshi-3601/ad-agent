@@ -10,12 +10,12 @@
         "conv_recent": 2
       }
     },
-    "action_hint": "Allocate more budget to this segment to capitalize on the increased conversion rate.",
+    "action_hint": "Increase budget allocation and optimize targeting for this segment to capitalize on the high conversion rate.",
     "urgency": "high",
     "confidence": "high"
   },
   {
-    "headline": "Complete drop in conversion rate for segment 103928|30-34|M|28",
+    "headline": "Conversion rate dropped to 0 for segment 103928|30-34|M|28",
     "evidence": {
       "key_metrics": {
         "cvr_recent": 0.0,
@@ -25,7 +25,7 @@
         "conv_recent": 0
       }
     },
-    "action_hint": "Investigate the reasons for the drop and consider pausing this segment until resolved.",
+    "action_hint": "Pause campaigns targeting this segment until further analysis can determine the cause of the drop.",
     "urgency": "high",
     "confidence": "medium"
   },
@@ -40,7 +40,7 @@
         "conv_recent": 4
       }
     },
-    "action_hint": "Monitor this segment closely and consider increasing the budget if the trend continues.",
+    "action_hint": "Monitor this segment closely and consider testing different creatives to further improve performance.",
     "urgency": "medium",
     "confidence": "medium"
   },
@@ -55,19 +55,19 @@
         "conv_recent": 6
       }
     },
-    "action_hint": "Review the targeting and messaging for this segment to identify potential issues.",
+    "action_hint": "Investigate potential issues with the campaign targeting or messaging for this segment.",
     "urgency": "medium",
     "confidence": "high"
   },
   {
-    "headline": "Multiple anomalies detected with conversions exceeding clicks",
+    "headline": "Multiple segments showing conversions exceeding clicks",
     "evidence": {
       "key_metrics": {
-        "anomalies_count": 10,
+        "issues_detected": 10,
         "note": "Likely view-through attribution; clamp for per-click modeling."
       }
     },
-    "action_hint": "Implement a clamp for per-click modeling to ensure accurate reporting and analysis.",
+    "action_hint": "Review and adjust attribution models to ensure accurate tracking of conversions.",
     "urgency": "high",
     "confidence": "high"
   }
