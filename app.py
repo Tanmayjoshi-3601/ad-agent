@@ -116,6 +116,8 @@ def dashboard():
                 border: 1px solid var(--border-primary);
                 box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             }
+            .chart-card { min-width: 500px; }
+            .chart-card #allocation-chart, .chart-card #performance-chart, .chart-card #cvr-chart { min-height: 400px; }
             .card h3 { margin: 0 0 16px 0; color: var(--text-primary); font-size: 1.25rem; font-weight: 600; }
             .full-width { grid-column: 1 / -1; }
             .log-container { 
@@ -313,21 +315,21 @@ def dashboard():
             </div>
             
             <div class="grid">
-                <div class="card">
+                <div class="card chart-card">
                     <h3>💰 Current Budget Split</h3>
                     <div class="concept-box">
                         Shows how your marketing budget is currently divided between different customer segments. Each slice represents a different group of customers.
                     </div>
                     <div id="allocation-chart"></div>
                 </div>
-                <div class="card">
+                <div class="card chart-card">
                     <h3>📈 Performance Over Time</h3>
                     <div class="concept-box">
                         Track how many <span class="tooltip">conversions<span class="tooltiptext">A conversion is when someone takes a desired action, like making a purchase, signing up, or downloading something</span></span> each customer segment generated each day. Rising lines = improving performance.
                     </div>
                     <div id="performance-chart"></div>
                 </div>
-                <div class="card full-width">
+                <div class="card full-width chart-card">
                     <h3>🎯 Conversion Success Rates</h3>
                     <div class="concept-box">
                         Shows what percentage of people who clicked on ads actually converted (made a purchase, signed up, etc.). Higher bars = more effective customer segments.
@@ -336,16 +338,16 @@ def dashboard():
                     <div id="cvr-chart"></div>
                 </div>
                 <div class="card">
-                    <h3>🔍 AI-Generated Insights</h3>
+                    <h3>🔍 AI Performance Analyst - Key Insights</h3>
                     <div class="concept-box">
-                        The AI analyst's observations about what's happening with your campaigns. These are like having a data scientist point out important trends you should know about.
+                        The AI analyst's detailed observations about what's happening with your campaigns. These insights include trend analysis, performance patterns, and data quality checks.
                     </div>
                     <div id="insights" class="insights-list"></div>
                 </div>
                 <div class="card">
-                    <h3>💡 Recommended Changes</h3>
+                    <h3>💡 AI Budget Strategist - Recommendations</h3>
                     <div class="concept-box">
-                        Specific suggestions from the AI about how to adjust your budget to get better results. Each suggestion explains what to change and why.
+                        Strategic budget optimization suggestions from the AI, including specific allocation changes and business rationale for each recommendation.
                     </div>
                     <div id="suggestions"></div>
                 </div>
@@ -518,7 +520,13 @@ def dashboard():
                             textinfo: 'label+percent',
                             textposition: 'outside'
                         }];
-                        Plotly.newPlot('allocation-chart', pieData, {height: 300});
+                        Plotly.newPlot('allocation-chart', pieData, {
+                            height: 400,
+                            margin: {t: 50, b: 50, l: 50, r: 50},
+                            paper_bgcolor: 'rgba(0,0,0,0)',
+                            plot_bgcolor: 'rgba(0,0,0,0)',
+                            font: {color: '#f0f6fc', size: 12}
+                        });
 
                         // Performance trends
                         const segments = [...new Set(plan.map(row => row.segment_key))];
@@ -530,13 +538,18 @@ def dashboard():
                                 type: 'scatter',
                                 mode: 'lines+markers',
                                 name: segment,
-                                line: {width: 2}
+                                line: {width: 3},
+                                marker: {size: 6}
                             };
                         });
                         Plotly.newPlot('performance-chart', performanceData, {
-                            height: 300,
-                            xaxis: {title: 'Day'},
-                            yaxis: {title: 'Conversions'}
+                            height: 400,
+                            margin: {t: 50, b: 50, l: 50, r: 50},
+                            xaxis: {title: 'Day', color: '#f0f6fc'},
+                            yaxis: {title: 'Conversions', color: '#f0f6fc'},
+                            paper_bgcolor: 'rgba(0,0,0,0)',
+                            plot_bgcolor: 'rgba(0,0,0,0)',
+                            font: {color: '#f0f6fc', size: 12}
                         });
 
                         // CVR by segment
@@ -550,14 +563,18 @@ def dashboard():
                             x: cvrData.map(d => d.segment),
                             y: cvrData.map(d => d.cvr * 100),
                             type: 'bar',
-                            marker: {color: 'rgba(0, 123, 255, 0.7)'},
+                            marker: {color: 'rgba(88, 166, 255, 0.8)'},
                             text: cvrData.map(d => `${d.clicks} clicks`),
                             textposition: 'outside'
                         }];
                         Plotly.newPlot('cvr-chart', barData, {
-                            height: 300,
-                            xaxis: {title: 'Segment', tickangle: -45},
-                            yaxis: {title: 'CVR (%)'}
+                            height: 400,
+                            margin: {t: 50, b: 100, l: 50, r: 50},
+                            xaxis: {title: 'Customer Segment', tickangle: -45, color: '#f0f6fc'},
+                            yaxis: {title: 'Conversion Rate (%)', color: '#f0f6fc'},
+                            paper_bgcolor: 'rgba(0,0,0,0)',
+                            plot_bgcolor: 'rgba(0,0,0,0)',
+                            font: {color: '#f0f6fc', size: 12}
                         });
                     }
                 } catch (error) {
@@ -568,41 +585,82 @@ def dashboard():
             function updateInsights(insights) {
                 const container = document.getElementById('insights');
                 if (!insights || insights.length === 0) {
-                    container.innerHTML = '<p>No insights available</p>';
+                    container.innerHTML = '<div class="insight-item"><div class="insight-headline">📊 Waiting for Analysis</div><div>Run the Smart Optimization first to generate performance insights and trend analysis.</div></div>';
                     return;
                 }
                 
-                const html = insights.map(insight => `
-                    <div class="insight-item">
-                        <div class="insight-headline">${insight.headline || 'Insight'}</div>
-                        <div class="insight-action">${insight.action_hint || ''}</div>
-                    </div>
-                `).join('');
+                const html = insights.map((insight, index) => {
+                    const evidence = insight.evidence || {};
+                    const evidenceText = evidence.clicks_recent ? 
+                        `📈 Data: ${evidence.clicks_recent} clicks, ${evidence.conv_recent || 0} conversions` : 
+                        (evidence.note ? `ℹ️ Context: ${evidence.note}` : '');
+                    
+                    return `
+                        <div class="insight-item">
+                            <div class="insight-headline">🔍 Insight ${index + 1}: ${insight.headline || 'Performance Observation'}</div>
+                            ${evidenceText ? `<div style="margin: 8px 0; padding: 8px; background: rgba(88, 166, 255, 0.1); border-radius: 6px; font-size: 13px;">${evidenceText}</div>` : ''}
+                            <div style="margin-top: 8px; font-weight: 500;">📋 Recommended Action:</div>
+                            <div class="insight-action">${insight.action_hint || 'Monitor this trend and consider adjustments if pattern continues.'}</div>
+                        </div>
+                    `;
+                }).join('');
                 container.innerHTML = html;
             }
 
             function updateSuggestions(data) {
                 const container = document.getElementById('suggestions');
                 if (!data || !data.suggestions) {
-                    container.innerHTML = '<p>No suggestions available</p>';
+                    container.innerHTML = '<div class="insight-item"><div class="insight-headline">💡 Waiting for Recommendations</div><div>Run the AI Insights analysis first to get strategic budget recommendations.</div></div>';
                     return;
                 }
                 
                 const suggestions = data.suggestions || [];
                 
                 if (suggestions.length === 0) {
-                    container.innerHTML = `<p>${data.rationale || 'No suggestions available'}</p>`;
+                    container.innerHTML = `
+                        <div class="insight-item">
+                            <div class="insight-headline">✅ Current Budget Allocation Looks Good</div>
+                            <div style="margin: 12px 0; padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 8px;">
+                                <strong>🎯 AI Assessment:</strong> ${data.rationale || 'No major adjustments needed at this time.'}
+                            </div>
+                            <div class="insight-action">Continue monitoring performance and run analysis again after more data collection.</div>
+                        </div>
+                    `;
                     return;
                 }
                 
-                const html = suggestions.map(s => `
-                    <div class="insight-item">
-                        <div class="insight-headline">${s.segment_key}: ${s.change}</div>
-                        <div>Old: ${(s.old_share * 100).toFixed(1)}% → New: ${(s.new_share * 100).toFixed(1)}%</div>
-                        <div class="insight-action">${s.reason}</div>
+                const html = suggestions.map((s, index) => {
+                    const changeIcon = s.change === 'increase' ? '📈' : (s.change === 'decrease' ? '📉' : '🔄');
+                    const changeColor = s.change === 'increase' ? 'var(--accent-success)' : (s.change === 'decrease' ? 'var(--accent-warning)' : 'var(--accent-primary)');
+                    
+                    return `
+                        <div class="insight-item">
+                            <div class="insight-headline">${changeIcon} Recommendation ${index + 1}: ${s.segment_key}</div>
+                            <div style="margin: 12px 0; padding: 12px; background: rgba(88, 166, 255, 0.1); border-radius: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span><strong>Budget Share Change:</strong></span>
+                                    <span style="color: ${changeColor}; font-weight: 600;">
+                                        ${(s.old_share * 100).toFixed(1)}% → ${(s.new_share * 100).toFixed(1)}%
+                                    </span>
+                                </div>
+                                <div style="font-size: 13px; color: var(--text-secondary);">
+                                    Net change: ${s.new_share > s.old_share ? '+' : ''}${((s.new_share - s.old_share) * 100).toFixed(1)} percentage points
+                                </div>
+                            </div>
+                            <div style="margin-top: 8px; font-weight: 500;">🧠 Business Rationale:</div>
+                            <div class="insight-action">${s.reason}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                const strategyOverview = `
+                    <div style="margin-top: 20px; padding: 16px; background: rgba(124, 58, 237, 0.1); border-radius: 12px; border: 1px solid rgba(124, 58, 237, 0.3);">
+                        <div style="font-weight: 600; color: var(--accent-secondary); margin-bottom: 8px;">🎯 Overall Strategy</div>
+                        <div style="font-style: italic;">${data.rationale}</div>
                     </div>
-                `).join('');
-                container.innerHTML = html + `<p style="margin-top: 15px; font-style: italic;">${data.rationale}</p>`;
+                `;
+                
+                container.innerHTML = html + strategyOverview;
             }
 
             function reset() {
