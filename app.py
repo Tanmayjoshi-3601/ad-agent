@@ -34,42 +34,183 @@ def dashboard():
         <title>Thompson Sampling Dashboard</title>
         <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
         <style>
-            body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+            :root {
+                --bg-primary: #0d1117;
+                --bg-secondary: #161b22;
+                --bg-tertiary: #1f2937;
+                --accent-primary: #58a6ff;
+                --accent-secondary: #7c3aed;
+                --accent-success: #10b981;
+                --accent-warning: #f59e0b;
+                --accent-error: #ef4444;
+                --text-primary: #f0f6fc;
+                --text-secondary: #8b949e;
+                --text-muted: #6e7681;
+                --border-primary: #30363d;
+                --border-secondary: #21262d;
+            }
+            * { box-sizing: border-box; }
+            body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif; 
+                margin: 0; 
+                padding: 20px;
+                background: linear-gradient(135deg, var(--bg-primary) 0%, #0a0e1a 100%);
+                color: var(--text-primary);
+                min-height: 100vh;
+                line-height: 1.5;
+            }
             .container { max-width: 1200px; margin: 0 auto; }
-            .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            .controls { display: flex; gap: 10px; margin-bottom: 20px; }
-            .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-            .btn-primary { background: #007bff; color: white; }
-            .btn-success { background: #28a745; color: white; }
-            .btn:disabled { background: #6c757d; cursor: not-allowed; }
-            .progress-container { margin: 20px 0; }
-            .progress-bar { width: 100%; background: #e9ecef; border-radius: 4px; height: 20px; overflow: hidden; }
-            .progress-fill { height: 100%; background: #007bff; transition: width 0.3s ease; }
-            .status { margin: 10px 0; padding: 10px; border-radius: 4px; }
-            .status.running { background: #d1ecf1; color: #0c5460; }
-            .status.idle { background: #d4edda; color: #155724; }
-            .status.error { background: #f8d7da; color: #721c24; }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-            .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .header { 
+                background: var(--bg-secondary); 
+                padding: 32px; 
+                border-radius: 16px; 
+                margin-bottom: 24px; 
+                border: 1px solid var(--border-primary);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            }
+            .header h1 { margin: 0 0 20px 0; font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+            .controls { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+            .btn { 
+                padding: 12px 24px; 
+                border: none; 
+                border-radius: 8px; 
+                cursor: pointer; 
+                font-weight: 600; 
+                font-size: 14px;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .btn-primary { background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; }
+            .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3); }
+            .btn-success { background: linear-gradient(135deg, var(--accent-success), #059669); color: white; }
+            .btn-success:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+            .btn:disabled { background: var(--bg-tertiary); color: var(--text-muted); cursor: not-allowed; transform: none; }
+            .btn:not(.btn-primary):not(.btn-success) { background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); }
+            .btn:not(.btn-primary):not(.btn-success):hover:not(:disabled) { background: var(--bg-secondary); }
+            .progress-container { margin: 24px 0; }
+            .progress-bar { 
+                width: 100%; 
+                background: var(--bg-tertiary); 
+                border-radius: 8px; 
+                height: 8px; 
+                overflow: hidden;
+                border: 1px solid var(--border-primary);
+            }
+            .progress-fill { 
+                height: 100%; 
+                background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary)); 
+                transition: width 0.3s ease; 
+                border-radius: 8px;
+            }
+            .status { margin: 16px 0; padding: 16px; border-radius: 12px; font-weight: 500; border: 1px solid; }
+            .status.running { background: rgba(88, 166, 255, 0.1); color: var(--accent-primary); border-color: rgba(88, 166, 255, 0.3); }
+            .status.idle { background: rgba(16, 185, 129, 0.1); color: var(--accent-success); border-color: rgba(16, 185, 129, 0.3); }
+            .status.error { background: rgba(239, 68, 68, 0.1); color: var(--accent-error); border-color: rgba(239, 68, 68, 0.3); }
+            .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; margin-bottom: 24px; }
+            .card { 
+                background: var(--bg-secondary); 
+                padding: 24px; 
+                border-radius: 16px; 
+                border: 1px solid var(--border-primary);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            }
+            .card h3 { margin: 0 0 16px 0; color: var(--text-primary); font-size: 1.25rem; font-weight: 600; }
             .full-width { grid-column: 1 / -1; }
-            .log-container { max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; background: #f8f9fa; padding: 10px; border-radius: 4px; }
+            .log-container { 
+                max-height: 200px; 
+                overflow-y: auto; 
+                font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; 
+                font-size: 13px; 
+                background: var(--bg-primary); 
+                padding: 16px; 
+                border-radius: 8px; 
+                border: 1px solid var(--border-primary);
+                color: var(--text-secondary);
+            }
             .insights-list { max-height: 300px; overflow-y: auto; }
-            .insight-item { border-left: 4px solid #007bff; padding: 10px; margin: 10px 0; background: #f8f9fa; }
-            .insight-headline { font-weight: bold; color: #007bff; }
-            .insight-action { font-style: italic; color: #6c757d; margin-top: 5px; }
-            .step-indicator { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
-            .step-circle { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
-            .step-pending { background: #e9ecef; color: #6c757d; }
-            .step-running { background: #007bff; color: white; }
-            .step-complete { background: #28a745; color: white; }
-            .step-error { background: #dc3545; color: white; }
-            .explanation-box { background: #e8f4f8; border: 1px solid #bee5eb; border-radius: 8px; padding: 15px; margin: 15px 0; }
-            .explanation-title { font-weight: bold; color: #0c5460; margin-bottom: 10px; }
-            .tooltip { position: relative; cursor: help; border-bottom: 1px dotted #007bff; }
-            .tooltip .tooltiptext { visibility: hidden; width: 300px; background-color: #555; color: white; text-align: left; border-radius: 6px; padding: 10px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -150px; opacity: 0; transition: opacity 0.3s; font-size: 12px; line-height: 1.4; }
+            .insight-item { 
+                border-left: 3px solid var(--accent-primary); 
+                padding: 16px; 
+                margin: 16px 0; 
+                background: var(--bg-tertiary); 
+                border-radius: 8px;
+                border: 1px solid var(--border-primary);
+            }
+            .insight-headline { font-weight: 600; color: var(--accent-primary); margin-bottom: 8px; }
+            .insight-action { font-style: italic; color: var(--text-secondary); margin-top: 8px; }
+            .step-indicator { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
+            .step-circle { 
+                width: 32px; 
+                height: 32px; 
+                border-radius: 50%; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                font-size: 14px; 
+                font-weight: 600;
+                border: 2px solid;
+            }
+            .step-pending { background: var(--bg-tertiary); color: var(--text-muted); border-color: var(--border-primary); }
+            .step-running { background: var(--accent-primary); color: white; border-color: var(--accent-primary); animation: pulse 2s infinite; }
+            .step-complete { background: var(--accent-success); color: white; border-color: var(--accent-success); }
+            .step-error { background: var(--accent-error); color: white; border-color: var(--accent-error); }
+            @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+            .explanation-box { 
+                background: rgba(88, 166, 255, 0.05); 
+                border: 1px solid rgba(88, 166, 255, 0.2); 
+                border-radius: 12px; 
+                padding: 20px; 
+                margin: 20px 0; 
+            }
+            .explanation-title { font-weight: 600; color: var(--accent-primary); margin-bottom: 12px; font-size: 1.1rem; }
+            .tooltip { position: relative; cursor: help; border-bottom: 1px dotted var(--accent-primary); color: var(--accent-primary); }
+            .tooltip .tooltiptext { 
+                visibility: hidden; 
+                width: 320px; 
+                background: var(--bg-tertiary); 
+                color: var(--text-primary); 
+                text-align: left; 
+                border-radius: 8px; 
+                padding: 12px; 
+                position: absolute; 
+                z-index: 1000; 
+                bottom: 125%; 
+                left: 50%; 
+                margin-left: -160px; 
+                opacity: 0; 
+                transition: opacity 0.3s; 
+                font-size: 13px; 
+                line-height: 1.4;
+                border: 1px solid var(--border-primary);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            }
             .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
-            .concept-box { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 12px; margin: 10px 0; font-size: 14px; }
-            .demo-note { background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 15px; margin: 15px 0; color: #721c24; }
+            .concept-box { 
+                background: rgba(245, 158, 11, 0.05); 
+                border: 1px solid rgba(245, 158, 11, 0.2); 
+                border-radius: 12px; 
+                padding: 16px; 
+                margin: 16px 0; 
+                font-size: 14px; 
+                color: var(--text-secondary);
+            }
+            .demo-note { 
+                background: rgba(124, 58, 237, 0.1); 
+                border: 1px solid rgba(124, 58, 237, 0.3); 
+                border-radius: 12px; 
+                padding: 20px; 
+                margin: 20px 0; 
+                color: var(--text-primary);
+            }
+            .demo-note strong { color: var(--accent-secondary); }
+            
+            /* Custom scrollbar */
+            ::-webkit-scrollbar { width: 8px; }
+            ::-webkit-scrollbar-track { background: var(--bg-primary); }
+            ::-webkit-scrollbar-thumb { background: var(--border-primary); border-radius: 4px; }
+            ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
         </style>
     </head>
     <body>

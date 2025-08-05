@@ -142,7 +142,7 @@ def trends_node(state: State) -> dict:
         "anomalies": anomalies
     })
     llm_out = _json_from_llm(system, user)
-
+    
     insights = llm_out.get("insights", [])
     if not insights:
         # Fallback: create simple bullets
@@ -178,6 +178,7 @@ def planner_node(state: State) -> dict:
     plan["day"] = pd.to_datetime(plan["day"])
 
     cap = float(state["cap"])
+    floor = 0.01 # minimum share
     aov_in = state.get("aov")
     aov_val = None if aov_in is None or (isinstance(aov_in, float) and np.isnan(aov_in)) else float(aov_in)
 
@@ -218,64 +219,127 @@ def planner_node(state: State) -> dict:
 
     # volume filter uses history clicks
     merged["volume"] = merged["clicks_hist"].fillna(0) if "clicks_hist" in merged.columns else 0
-    eligible = merged[merged["volume"] >= 10].copy()
-
-    # if not enough volume, no-op (keep shares)
-    if eligible.empty:
-        return {
-            "plan_suggestions": [],
-            "rationale": "Not enough recent volume to justify changes; keeping shares as-is within pacing guardrails."
-        }
-
-    # choose metric and build up/down sets
-    eligible["_metric"] = eligible[metric].fillna(-np.inf if metric == "roas" else 0.0)
-    up = eligible.sort_values("_metric", ascending=False).head(3)
-    dn = eligible.sort_values("_metric", ascending=True).head(3)
-
-    # current shares
-    shares = today_plan.set_index("segment_key")["share"].to_dict()
-
-    def bounded_new_share(seg, delta):
-        old = float(shares.get(seg, 0.0))
-        delta = float(np.clip(delta, -cap, +cap))
-        return max(0.0, old + delta)
-
-    suggestions = []
-    for _, r in up.iterrows():
-        old = float(shares.get(r["segment_key"], 0.0))
-        new = bounded_new_share(r["segment_key"], +0.10)
-        suggestions.append({
-            "segment_key": r["segment_key"],
-            "change": "+10%",
-            "old_share": old,
-            "new_share": new,
-            "reason": f"High {metric.upper()} with adequate volume"
-        })
-    for _, r in dn.iterrows():
-        old = float(shares.get(r["segment_key"], 0.0))
-        new = bounded_new_share(r["segment_key"], -0.10)
-        suggestions.append({
-            "segment_key": r["segment_key"],
-            "change": "-10%",
-            "old_share": old,
-            "new_share": new,
-            "reason": f"Low {metric.upper()} with adequate volume"
+    
+    # Prepare segments_recent data for LLM and internal logic
+    segments_recent = []
+    for _, row in merged.iterrows():
+        segments_recent.append({
+            "segment_key": row["segment_key"],
+            "cvr_recent": _safe_float(row.get("cvr")) if metric=="cvr" else None,
+            "roas_recent": _safe_float(row.get("roas")) if metric=="roas" else None,
+            "clicks_recent": int(row["volume"]),
+            "share_plan": float(row.get("share", 0.0)),
+            "metric_value": _safe_float(row.get(metric))
         })
 
-    # re-normalize to sum=1 while keeping other segments unchanged
-    new_shares = shares.copy()
-    for s in suggestions:
-        new_shares[s["segment_key"]] = s["new_share"]
-    total = sum(new_shares.values()) or 1.0
-    for k_ in list(new_shares.keys()):
-        new_shares[k_] = new_shares[k_] / total
+    # Filter for segments with at least some activity
+    segments_recent = [s for s in segments_recent if s["clicks_recent"] > 0]
 
+    current_shares = {s["segment_key"]: s["share_plan"] for s in segments_recent}
+    
+    # Enhanced heuristic: be more proactive in generating suggestions
     final_suggestions = []
-    for s in suggestions:
-        final_suggestions.append({
-            **s,
-            "final_share": new_shares[s["segment_key"]]
-        })
+
+    # Sort segments by performance metric (CVR or ROAS)
+    performance_scores = []
+    for seg in segments_recent:
+        segment_key = seg["segment_key"]
+        current_share = seg["share_plan"]
+        clicks = seg["clicks_recent"]
+        cvr = seg["cvr_recent"]
+        roas = seg["roas_recent"]
+        
+        target_metric = cvr if metric == "cvr" else roas
+        
+        if target_metric is not None:
+             performance_scores.append({
+                "segment_key": segment_key,
+                "metric": target_metric,
+                "clicks": clicks,
+                "current_share": current_share,
+                "cvr": cvr,
+                "roas": roas
+            })
+
+    # Sort by performance metric descending
+    performance_scores.sort(key=lambda x: x["metric"], reverse=True)
+
+    if len(performance_scores) >= 2:
+        # Always suggest reallocating from worst to best performers
+        top_performers = performance_scores[:min(3, len(performance_scores)//2)]
+        bottom_performers = performance_scores[-min(3, len(performance_scores)//2):]
+
+        # Suggest increasing budget for top performers
+        for seg in top_performers:
+            if seg["clicks"] >= 5 and seg["current_share"] < cap - 0.03:
+                new_share = min(seg["current_share"] * 1.25, cap)
+                if new_share > seg["current_share"] + 0.01:  # meaningful change
+                    final_suggestions.append({
+                        "segment_key": seg["segment_key"],
+                        "change": "increase",
+                        "old_share": seg["current_share"],
+                        "new_share": new_share,
+                        "reason": f"Top performer: {seg['metric']:.3f} {'ROAS' if aov_val else 'CVR'}, {seg['clicks']} clicks"
+                    })
+
+        # Suggest decreasing budget for bottom performers  
+        for seg in bottom_performers:
+            if seg["current_share"] > floor + 0.03:
+                new_share = max(seg["current_share"] * 0.75, floor)
+                if seg["current_share"] - new_share > 0.01:  # meaningful change
+                    final_suggestions.append({
+                        "segment_key": seg["segment_key"],
+                        "change": "decrease",
+                        "old_share": seg["current_share"],
+                        "new_share": new_share,
+                        "reason": f"Underperforming: {seg['metric']:.3f} {'ROAS' if aov_val else 'CVR'}, reallocate to better segments"
+                    })
+
+        # If no suggestions yet, create balanced reallocation suggestions
+        if not final_suggestions and len(performance_scores) >= 4:
+            # Find segments with significant share differences vs performance
+            for i, seg in enumerate(performance_scores[:len(performance_scores)//2]):
+                if seg["clicks"] >= 3 and seg["current_share"] < 0.15:
+                    final_suggestions.append({
+                        "segment_key": seg["segment_key"],
+                        "change": "test_increase",
+                        "old_share": seg["current_share"],
+                        "new_share": min(seg["current_share"] + 0.05, cap),
+                        "reason": f"Test scaling: good performance ({seg['metric']:.3f}) with low share"
+                    })
+                    if len(final_suggestions) >= 2:
+                        break
+
+    # Normalize suggestions to ensure total share is 1.0
+    if final_suggestions:
+        current_total_share = sum(s["old_share"] for s in final_suggestions)
+        adjustments = {}
+        
+        # Calculate net change from suggestions
+        for s in final_suggestions:
+            key = s["segment_key"]
+            delta = s["new_share"] - s["old_share"]
+            adjustments[key] = adjustments.get(key, 0) + delta
+        
+        # Distribute excess share/deficit to/from other segments
+        unallocated_share = 1.0 - sum(s["new_share"] for s in final_suggestions)
+        other_segments = [s for s in segments_recent if s["segment_key"] not in [sugg["segment_key"] for sugg in final_suggestions]]
+        
+        if other_segments:
+            total_other_share = sum(s["share_plan"] for s in other_segments)
+            if total_other_share > 0:
+                for s in other_segments:
+                    share_to_add = unallocated_share * (s["share_plan"] / total_other_share)
+                    s["new_share"] = s["share_plan"] + share_to_add
+                    s["new_share"] = max(floor, min(s["new_share"], cap)) # Apply bounds
+        
+        # Update final suggestions with potentially adjusted new_shares
+        final_suggestions_updated = []
+        for s in final_suggestions:
+            s["new_share"] = max(floor, min(s["new_share"], cap))
+            final_suggestions_updated.append(s)
+        final_suggestions = final_suggestions_updated
+
 
     # concise stakeholder rationale via LLM (optional)
     system = "You are a pragmatic media planner. Output concise JSON."
