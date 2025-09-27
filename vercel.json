@@ -2,14 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "app-optimized.py",
+      "src": "app.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "app-optimized.py"
+      "dest": "app.py"
     }
   ]
 }
