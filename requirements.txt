@@ -1,11 +1,5 @@
-fastapi==0.116.1
-pandas==2.2.1
-numpy==1.26.4
-pydantic==2.11.7
-pydantic-settings==2.10.1
-scipy==1.13.0
-langgraph
-plotly==6.2.0
-uvicorn==0.29.0
-openai==1.98.0
-pyarrow==16.1.0
+fastapi
+pydantic
+pydantic-settings
+uvicorn
+openai
