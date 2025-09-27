@@ -1,41 +1,41 @@
 [
   {
-    "headline": "Significant increase in conversion rate for segment 144562|30-34|M|36",
+    "headline": "Significant Increase in Conversion Rate for Segment 144562|30-34|M|36",
     "evidence": {
       "key_metrics": {
         "cvr_recent": 0.25,
-        "cvr_prior": 0.073,
-        "pct_cvr_change": 2.42,
+        "cvr_prior": 0.0732,
+        "pct_cvr_change": 241.67,
         "clicks_recent": 8,
         "conv_recent": 2
       }
     },
-    "action_hint": "Increase budget allocation and optimize targeting for this segment to capitalize on the high conversion rate.",
+    "action_hint": "Allocate more budget to this segment to capitalize on the increased conversion rate.",
     "urgency": "high",
     "confidence": "high"
   },
   {
-    "headline": "Conversion rate dropped to 0 for segment 103928|30-34|M|28",
+    "headline": "Complete Drop in Conversion Rate for Segment 103928|30-34|M|28",
     "evidence": {
       "key_metrics": {
         "cvr_recent": 0.0,
         "cvr_prior": 1.0,
-        "pct_cvr_change": -1.0,
+        "pct_cvr_change": -100.0,
         "clicks_recent": 1,
         "conv_recent": 0
       }
     },
-    "action_hint": "Pause campaigns targeting this segment until further analysis can determine the cause of the drop.",
+    "action_hint": "Investigate the reasons behind the drop and consider pausing this segment until resolved.",
     "urgency": "high",
     "confidence": "medium"
   },
   {
-    "headline": "Moderate increase in conversion rate for segment 144570|30-34|M|7",
+    "headline": "Moderate Increase in Conversion Rate for Segment 144570|30-34|M|7",
     "evidence": {
       "key_metrics": {
-        "cvr_recent": 0.111,
-        "cvr_prior": 0.056,
-        "pct_cvr_change": 1.0,
+        "cvr_recent": 0.1111,
+        "cvr_prior": 0.0556,
+        "pct_cvr_change": 100.0,
         "clicks_recent": 36,
         "conv_recent": 4
       }
@@ -45,29 +45,40 @@
     "confidence": "medium"
   },
   {
-    "headline": "Significant drop in conversion rate for segment 144602|40-44|M|20",
+    "headline": "Significant Decrease in Conversion Rate for Segment 144602|40-44|M|20",
     "evidence": {
       "key_metrics": {
-        "cvr_recent": 0.025,
-        "cvr_prior": 0.182,
-        "pct_cvr_change": -0.861,
+        "cvr_recent": 0.0253,
+        "cvr_prior": 0.1818,
+        "pct_cvr_change": -86.08,
         "clicks_recent": 237,
         "conv_recent": 6
       }
     },
-    "action_hint": "Investigate potential issues with the campaign targeting or messaging for this segment.",
+    "action_hint": "Review the targeting and messaging for this segment to identify potential issues.",
     "urgency": "medium",
     "confidence": "high"
   },
   {
-    "headline": "Multiple segments showing conversions exceeding clicks",
+    "headline": "Multiple Instances of Conversions Exceeding Clicks Detected",
     "evidence": {
       "key_metrics": {
         "issues_detected": 10,
-        "note": "Likely view-through attribution; clamp for per-click modeling."
+        "segments_affected": [
+          "103929|30-34|M|29",
+          "104108|40-44|M|15",
+          "108793|35-39|F|63",
+          "110837|30-34|M|15",
+          "123528|30-34|M|29",
+          "123551|30-34|M|29",
+          "123639|35-39|F|18",
+          "108791|35-39|F|32",
+          "108804|40-44|F|21",
+          "109839|40-44|F|30"
+        ]
       }
     },
-    "action_hint": "Review and adjust attribution models to ensure accurate tracking of conversions.",
+    "action_hint": "Implement a clamp for per-click modeling to ensure accurate attribution.",
     "urgency": "high",
     "confidence": "high"
   }
