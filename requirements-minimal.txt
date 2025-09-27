@@ -1,0 +1,11 @@
+fastapi
+pandas
+numpy
+pydantic
+pydantic-settings
+scipy
+langgraph
+plotly
+uvicorn
+openai
+pyarrow
