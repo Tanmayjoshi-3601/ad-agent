@@ -1,0 +1,48 @@
+# Exclude unnecessary files from Vercel deployment
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/
+.mypy_cache/
+.pytest_cache/
+.hypothesis/
+
+# Exclude large data files
+*.parquet
+*.csv
+*.json
+*.ipynb
+*.txt
+!requirements.txt
+!runtime.txt
+
+# Exclude development files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Exclude documentation
+README.md
+DEPLOYMENT.md
+*.md
+
+# Exclude backup files
+app-lightweight.py
+requirements-minimal.txt
