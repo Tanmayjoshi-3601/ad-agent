@@ -1,5 +1,5 @@
 
-# 🧠 Smart Budget Optimization Dashboard
+# 🧠 Smart Budget Optimization Dashboard (The app is live here: grand-fulfillment-production.up.railway.app)
 
 An AI-powered marketing budget optimization system that uses Thompson Sampling and AI agents to automatically learn and optimize campaign budget allocation across customer segments.
 
